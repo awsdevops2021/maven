@@ -1,1 +1,50 @@
-this is a new test file
+pipeline
+{
+    agent any
+    stages
+    {
+       stage('ContinuousDownload') 
+       {
+           steps
+           {
+               git 'https://github.com/awsdevops2021/maven.git'
+           }
+       }
+        stage('ContinuousBuild') 
+        {
+            steps
+            {
+                sh 'mvn package'
+            }
+        }
+        stage('ContinuousDeployment') 
+        {
+            steps
+            {
+              deploy adapters: [tomcat9(credentialsId: 'fe2d4c35-7615-4313-a334-5ccd870f415e', path: '', url: 'http://10.0.0.108:8080')], contextPath: 'testapp', war: '**/*.war'   
+            }
+            
+        }
+        stage('ContinuousTesting') 
+        {
+            steps
+            {
+               git 'https://github.com/awsdevops2021/FunctionalTesting.git'
+               sh 'java -jar /var/lib/jenkins/workspace/Declarativewebhook/testing.jar'
+            }
+            
+        }
+    }
+    post
+    {
+        success
+        {
+            deploy adapters: [tomcat9(credentialsId: 'fe2d4c35-7615-4313-a334-5ccd870f415e', path: '', url: 'http://10.0.0.5:8080')], contextPath: 'prodapp', war: '**/*.war'
+        }
+        failure
+        {
+            mail bcc: '', body: 'jenkins failed in CI ', cc: '', from: '', replyTo: '', subject: 'CI failed', to: 'enow@gmail.com'
+        }
+    }
+        
+}
